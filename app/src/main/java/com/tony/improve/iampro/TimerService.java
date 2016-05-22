@@ -16,13 +16,14 @@ public class TimerService extends Service {
     public void onCreate(){
         super.onCreate();
         //TODO: Initialize the AsyncTask to start the countdown timer
-        Log.i(TAG, "Starting Timer Service");
-        cntTimer = new NotifyCountDownTimer(52,1);
-        cntTimer.start();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
+        Log.i(TAG, "Starting Timer Service");
+        long timerValue = (Long)intent.getExtras().get(MainActivity.TIMER_VALUE);
+        cntTimer = new NotifyCountDownTimer(timerValue,1,startId);
+        cntTimer.start();
         return super.onStartCommand(intent,flags, startId);
     }
 
@@ -32,23 +33,30 @@ public class TimerService extends Service {
     }
 
     public class NotifyCountDownTimer extends CountDownTimer {
-
-        public NotifyCountDownTimer(long startTime, long interval) {
+        private int serviceStartId;
+        public NotifyCountDownTimer(long startTime, long interval, int srvStartId) {
             super(startTime*60000, interval*60000);
-            Log.i(TAG, "Countdown Timer started with time"+String.valueOf(startTime));
-
+            Log.i(TAG, "Countdown Timer started with time "+String.valueOf(startTime));
+            serviceStartId = srvStartId;
+            Log.i(TAG, "Service startId is "+serviceStartId);
         }
 
         @Override
         public void onFinish() {
             //time_remaining.setText("Congratulations");
+            Log.i(TAG, "Timer finished");
+            stopSelf(serviceStartId);
+            Intent notifyMainAct = new Intent(TIMER_BR);
+            notifyMainAct.putExtra("timer_count",String.valueOf(0));
+            sendBroadcast(notifyMainAct);
         }
 
         @Override
         public void onTick(long millisUntilFinished) {
-            Log.i(TAG, "On Tick: "+String.valueOf(millisUntilFinished/60000));
+            long minRemaining = millisUntilFinished/60000;
+            Log.i(TAG, "On Tick: "+String.valueOf(minRemaining));
             Intent notifyMainAct = new Intent(TIMER_BR);
-            notifyMainAct.putExtra("timer_count",String.valueOf(millisUntilFinished/60000));
+            notifyMainAct.putExtra("timer_count",String.valueOf(minRemaining));
             sendBroadcast(notifyMainAct);
         }
     }
